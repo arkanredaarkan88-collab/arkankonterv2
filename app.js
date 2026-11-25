@@ -2,20 +2,11 @@
  * ============================================================================
  * ARKAN KONTER — LOGIKA UTAMA APLIKASI KASIR & PEMBUKUAN OFFLINE
  * ============================================================================
- * Fitur Utama:
- * - UI Gabungan Dashboard Modern + Statistik 3 Kolom + Bottom Nav 4 Menu
- * - Tombol Pintas "000" pada input nominal (misal: ketik 10 + tekan 000 -> 10.000)
- * - Skema Biaya Admin Berjenjang Otomatis (<20rb: 3rb, 20-120rb: 5rb, 120rb+: 10rb, 300rb+: 15rb)
- * - Edit & Hapus Transaksi (otomatis mengembalikan/menyesuaikan saldo & piutang terkait)
- * - Edit & Hapus Saldo Dompet
- * - Logika Kasbon Terakumulasi (1 Orang = 1 Data Utang Aktif)
- * - Fitur Bayar / Cicil Kasbon bertahap dengan riwayat cicilan & status Lunas otomatis
  */
 
 (function () {
   'use strict';
 
-  // State aplikasi di memori
   const state = {
     wallets: [],
     transactions: [],
@@ -26,31 +17,23 @@
     confirmCallback: null
   };
 
-  // ==========================================================================
-  // 1. HELPER FORMAT ANGKA, RUPIAH, TANGGAL & SKEMA BIAYA ADMIN
-  // ==========================================================================
-
-  /** Mengubah string berformat ribuan ("10.000") menjadi integer murni (10000). */
   function parseRupiahInput(str) {
     if (typeof str === 'number') return Math.round(str);
     const cleaned = String(str || '').replace(/[^0-9]/g, '');
     return cleaned ? parseInt(cleaned, 10) : 0;
   }
 
-  /** Memformat integer menjadi format ribuan Indonesia tanpa simbol ("10.000"). */
   function formatThousands(num) {
     const n = Math.round(Number(num) || 0);
     return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   }
 
-  /** Memformat integer menjadi tampilan mata uang Rupiah ("Rp 10.000" / "Rp -150.000"). */
   function formatRp(num) {
     const n = Math.round(Number(num) || 0);
     const sign = n < 0 ? '-' : '';
     return `${sign}Rp ${formatThousands(Math.abs(n))}`;
   }
 
-  /** Menghitung biaya admin otomatis berdasarkan nominal top up. */
   function calculateTieredAdminFee(nominal) {
     if (!nominal || nominal <= 0) return 0;
     if (nominal < 20000) return 3000;
@@ -59,7 +42,6 @@
     return 15000;
   }
 
-  /** Memasang format otomatis + tombol pintas "000" pada pasangan input & tombol. */
   function bindNominalInputWithTripleZero(inputEl, zeroBtnEl, onChangeCallback) {
     if (!inputEl) return;
 
@@ -76,7 +58,6 @@
           inputEl.focus();
           return;
         }
-        // Tambahkan tiga nol (x1000) lalu format dengan titik ribuan
         const multiplied = currentVal * 1000;
         inputEl.value = formatThousands(multiplied);
         inputEl.focus();
@@ -85,7 +66,6 @@
     }
   }
 
-  /** Menampilkan notifikasi toast singkat di bagian atas layar. */
   function showToast(message) {
     const toast = document.getElementById('toast');
     toast.textContent = message;
@@ -96,12 +76,10 @@
     }, 2600);
   }
 
-  /** Menghasilkan ID unik berbasis timestamp. */
   function generateId(prefix) {
     return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
   }
 
-  /** Format tanggal singkat Indonesia (misal: "26 Nov, 09.30"). */
   function formatDateTimeShort(isoStr) {
     const d = new Date(isoStr);
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
@@ -112,7 +90,6 @@
     return `${day} ${mon}, ${hh}.${mm}`;
   }
 
-  /** Mengecek apakah timestamp termasuk hari ini. */
   function isToday(isoStr) {
     const d = new Date(isoStr);
     const now = new Date();
@@ -123,17 +100,15 @@
     );
   }
 
-  /** Mengecek apakah timestamp termasuk bulan ini. */
   function isThisMonth(isoStr) {
     const d = new Date(isoStr);
     const now = new Date();
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   }
 
-  /** Menghitung jadwal kulakan saldo berikutnya (Selasa = 2, Jumat = 5). */
   function getNextRestockSchedule() {
     const now = new Date();
-    const day = now.getDay(); // 0=Min .. 6=Sab
+    const day = now.getDay();
     const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
     const fullMonths = [
       'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -141,7 +116,6 @@
     ];
     const dateLabel = `${dayNames[day]}, ${now.getDate()} ${fullMonths[now.getMonth()]} ${now.getFullYear()}`;
 
-    // Hitung selisih hari ke Selasa (2) dan Jumat (5) terdekat
     const diffTue = (2 - day + 7) % 7;
     const diffFri = (5 - day + 7) % 7;
 
@@ -156,10 +130,6 @@
     const chipText = daysLeft === 0 ? 'Hari Ini!' : `${daysLeft} Hari`;
     return { dateLabel, nextDayName, daysLeft, chipText };
   }
-
-  // ==========================================================================
-  // 2. PEMUATAN DATA & SINKRONISASI STATE
-  // ==========================================================================
 
   async function refreshAllData() {
     const [wallets, transactions, debts] = await Promise.all([
@@ -188,10 +158,6 @@
     renderDataPage();
   }
 
-  // ==========================================================================
-  // 3. RENDER BERANDA (DASHBOARD GABUNGAN TERBAIK)
-  // ==========================================================================
-
   function renderHeaderAndSchedule() {
     const sched = getNextRestockSchedule();
     document.getElementById('current-date-display').textContent = sched.dateLabel;
@@ -212,7 +178,6 @@
       dataNote.textContent = msg;
     }
 
-    // Status koneksi offline/online
     const badge = document.getElementById('offline-badge');
     const statusText = document.getElementById('offline-status-text');
     if (navigator.onLine) {
@@ -225,7 +190,6 @@
   }
 
   function renderDashboard() {
-    // Saldo Utama (DANA) & Tunai Laci
     const primaryWallet = state.wallets.find((w) => w.isPrimary) || state.wallets[0];
     const cashWallet = state.wallets.find((w) => w.isCash);
 
@@ -237,7 +201,6 @@
       document.getElementById('cash-wallet-balance').textContent = formatRp(cashWallet.balance);
     }
 
-    // 3 Kotak Statistik: OMZET HARI INI, UNTUNG BERSIH (HARI INI), TOTAL KASBON AKTIF
     const todayTxs = state.transactions.filter((t) => isToday(t.createdAt));
     const todayTopups = todayTxs.filter((t) => t.type === 'topup');
     const todayExpenses = todayTxs.filter((t) => t.type === 'expense');
@@ -255,7 +218,6 @@
     document.getElementById('stat-profit').textContent = formatRp(netProfitToday);
     document.getElementById('stat-kasbon').textContent = formatRp(totalActiveKasbon);
 
-    // Dot indikator pada bottom nav Kasbon
     const navDot = document.getElementById('nav-kasbon-dot');
     if (totalActiveKasbon > 0) {
       navDot.classList.remove('hidden');
@@ -263,7 +225,6 @@
       navDot.classList.add('hidden');
     }
 
-    // Grid Dompet Lain & Bank (semua selain primary dan cash)
     const otherWallets = state.wallets.filter((w) => !w.isPrimary && !w.isCash);
     const gridEl = document.getElementById('other-wallets-grid');
     gridEl.innerHTML = otherWallets
@@ -282,7 +243,6 @@
       )
       .join('');
 
-    // Aktivitas Terakhir (5 transaksi terbaru + tombol Edit & Hapus)
     const recentListEl = document.getElementById('recent-transactions-list');
     const recentSlice = state.transactions.slice(0, 5);
     if (recentSlice.length === 0) {
@@ -292,7 +252,6 @@
     }
   }
 
-  /** Membuat HTML satu baris transaksi dengan tombol Edit (pensil) & Hapus (tempat sampah). */
   function renderTransactionItemHTML(tx) {
     const wallet = state.wallets.find((w) => w.id === tx.walletId);
     const walletLabel = wallet ? wallet.shortName : tx.walletName || 'Akun';
@@ -371,10 +330,6 @@
     `;
   }
 
-  // ==========================================================================
-  // 4. FORM TRANSAKSI TOP UP & KALKULASI REAL-TIME
-  // ==========================================================================
-
   function renderTopUpFormWallets() {
     const digitalWallets = state.wallets.filter((w) => !w.isCash);
     if (!digitalWallets.some((w) => w.id === state.selectedWalletId) && digitalWallets.length > 0) {
@@ -413,7 +368,6 @@
     }
 
     const adminFee = parseRupiahInput(adminInput.value);
-    // Default potongan modal = nominal top up
     modalInput.value = nominal > 0 ? formatThousands(nominal) : '0';
     const modalDeducted = parseRupiahInput(modalInput.value);
 
@@ -456,11 +410,9 @@
       return;
     }
 
-    // 1. Potong saldo dompet e-wallet sumber
     sourceWallet.balance -= modalDeducted;
     await window.arkanDB.put('wallets', sourceWallet);
 
-    // 2. Proses pembayaran pelanggan (Tunai / Transfer / Kasbon)
     let debtId = null;
     if (state.selectedPaymentMethod === 'tunai') {
       const cashWallet = await window.arkanDB.getById('wallets', 'cash');
@@ -477,7 +429,6 @@
         await window.arkanDB.put('wallets', bankWallet);
       }
     } else if (state.selectedPaymentMethod === 'kasbon') {
-      // LOGIKA KASBON: 1 ORANG = 1 AKUMULASI UTANG AKTIF
       const customerKey = customerName.toLowerCase();
       const allDebts = await window.arkanDB.getAll('debts');
       let existingDebt = allDebts.find((d) => d.customerKey === customerKey && d.status === 'unpaid');
@@ -495,7 +446,6 @@
       };
 
       if (existingDebt) {
-        // Akumulasikan ke data pelanggan yang sudah ada
         existingDebt.customerName = customerName;
         existingDebt.totalDebt += totalBill;
         existingDebt.remainingAmount += totalBill;
@@ -506,7 +456,6 @@
         await window.arkanDB.put('debts', existingDebt);
         debtId = existingDebt.id;
       } else {
-        // Buat data utang baru untuk pelanggan ini
         debtId = generateId('debt');
         const newDebt = {
           id: debtId,
@@ -525,7 +474,6 @@
       }
     }
 
-    // 3. Simpan riwayat transaksi
     const txRecord = {
       id: txId,
       type: 'topup',
@@ -544,7 +492,6 @@
     };
     await window.arkanDB.put('transactions', txRecord);
 
-    // Reset form
     document.getElementById('topup-nominal').value = '';
     document.getElementById('topup-admin').value = '0';
     document.getElementById('topup-modal').value = '0';
@@ -562,11 +509,6 @@
     switchView('beranda');
   }
 
-  // ==========================================================================
-  // 5. EDIT & HAPUS TRANSAKSI (REVERSI SALDO & PIUTANG OTOMATIS)
-  // ==========================================================================
-
-  /** Membalikkan efek saldo & kasbon dari transaksi sebelum diedit atau dihapus. */
   async function revertTransactionEffects(tx) {
     if (tx.type === 'topup') {
       const sourceWallet = await window.arkanDB.getById('wallets', tx.walletId);
@@ -698,10 +640,8 @@
       return;
     }
 
-    // 1. Batalkan efek transaksi lama
     await revertTransactionEffects(oldTx);
 
-    // 2. Terapkan efek transaksi baru
     const targetWallet = await window.arkanDB.getById('wallets', newWalletId);
     const updatedTx = {
       ...oldTx,
@@ -798,10 +738,6 @@
     showToast('Transaksi berhasil diperbarui!');
   }
 
-  // ==========================================================================
-  // 6. HALAMAN KASBON (1 ORANG = 1 UTANG + FITUR BAYAR / CICIL)
-  // ==========================================================================
-
   function renderKasbonPage() {
     const query = (document.getElementById('kasbon-search').value || '').trim().toLowerCase();
     const filter = document.getElementById('kasbon-filter').value;
@@ -809,7 +745,6 @@
     const unpaid = state.debts.filter((d) => d.status === 'unpaid' && d.remainingAmount > 0);
     const paid = state.debts.filter((d) => d.status === 'paid' || d.remainingAmount <= 0);
 
-    // Datalist untuk autocomplete nama pelanggan kasbon di form Top Up
     const datalist = document.getElementById('existing-debtors-datalist');
     datalist.innerHTML = unpaid
       .map((d) => `<option value="${escapeHtml(d.customerName)}"></option>`)
@@ -825,7 +760,6 @@
     cardUnpaid.style.display = filter === 'paid' ? 'none' : 'block';
     cardPaid.style.display = filter === 'unpaid' ? 'none' : 'block';
 
-    // Render Piutang Belum Lunas
     const filteredUnpaid = unpaid.filter((d) => d.customerName.toLowerCase().includes(query));
     const unpaidListEl = document.getElementById('unpaid-debts-list');
     if (filteredUnpaid.length === 0) {
@@ -834,7 +768,6 @@
       unpaidListEl.innerHTML = filteredUnpaid.map((d) => renderDebtCardHTML(d, false)).join('');
     }
 
-    // Render Riwayat Piutang Lunas
     const filteredPaid = paid.filter((d) => d.customerName.toLowerCase().includes(query));
     const paidListEl = document.getElementById('paid-debts-list');
     if (filteredPaid.length === 0) {
@@ -951,7 +884,6 @@
       await window.arkanDB.put('wallets', targetWallet);
     }
 
-    // Kurangi sisa utang pelanggan
     debt.remainingAmount -= payAmount;
     debt.paidAmount = (debt.paidAmount || 0) + payAmount;
     debt.updatedAt = nowIso;
@@ -974,7 +906,6 @@
 
     await window.arkanDB.put('debts', debt);
 
-    // Catat ke riwayat transaksi sebagai pemasukan cicilan
     await window.arkanDB.put('transactions', {
       id: generateId('tx'),
       type: 'installment',
@@ -1014,10 +945,6 @@
     );
   }
 
-  // ==========================================================================
-  // 7. HALAMAN LAPORAN & CATAT PENGELUARAN / PEMASUKAN LAIN
-  // ==========================================================================
-
   function renderReportPage() {
     const period = document.getElementById('report-period-filter').value;
     const filteredTxs = state.transactions.filter((t) => {
@@ -1031,7 +958,6 @@
 
     const totalOmzet = topups.reduce((sum, t) => sum + (t.nominal || 0), 0);
 
-    // Profit Admin (Lunas): hitung dari topup tunai/transfer + topup kasbon yang utangnya sudah lunas
     const paidDebtIds = new Set(
       state.debts.filter((d) => d.status === 'paid' || d.remainingAmount <= 0).map((d) => d.id)
     );
@@ -1045,7 +971,6 @@
     const totalExpense = expenses.reduce((sum, t) => sum + (t.nominal || 0), 0);
     const netProfit = realizedProfit - totalExpense;
 
-    // Total Aset Usaha = Seluruh Saldo Dompet + Laci Tunai + Piutang Aktif
     const totalWalletBalances = state.wallets.reduce((sum, w) => sum + (w.balance || 0), 0);
     const activeReceivables = state.debts
       .filter((d) => d.status === 'unpaid')
@@ -1058,7 +983,6 @@
     document.getElementById('rep-net').textContent = formatRp(netProfit);
     document.getElementById('rep-total-assets').textContent = formatRp(totalAssets);
 
-    // Dropdown Akun Terkait pada Form Catat Arus Kas
     const cfWalletSelect = document.getElementById('cf-wallet');
     const prevSelected = cfWalletSelect.value;
     cfWalletSelect.innerHTML = state.wallets
@@ -1070,7 +994,6 @@
       cfWalletSelect.value = 'cash';
     }
 
-    // Daftar Semua Transaksi
     document.getElementById('all-tx-count').textContent = `${filteredTxs.length} transaksi`;
     const allListEl = document.getElementById('all-transactions-list');
     if (filteredTxs.length === 0) {
@@ -1082,7 +1005,7 @@
 
   async function handleCashflowSubmit(e) {
     e.preventDefault();
-    const cfType = document.getElementById('cf-type').value; // 'expense' | 'income'
+    const cfType = document.getElementById('cf-type').value;
     const walletId = document.getElementById('cf-wallet').value;
     const nominal = parseRupiahInput(document.getElementById('cf-nominal').value);
     const note = document.getElementById('cf-note').value.trim();
@@ -1124,10 +1047,6 @@
     await refreshAllData();
     showToast(cfType === 'expense' ? 'Pengeluaran berhasil dicatat.' : 'Pemasukan kas berhasil dicatat.');
   }
-
-  // ==========================================================================
-  // 8. HALAMAN DATA (KELOLA DOMPET, EDIT/HAPUS DOMPET, BACKUP JSON/CSV)
-  // ==========================================================================
 
   function renderDataPage() {
     const listEl = document.getElementById('manage-wallets-list');
@@ -1279,7 +1198,6 @@
     );
   }
 
-  // Backup JSON, Export CSV, Restore JSON, & Browser Notification
   async function exportJSONBackup() {
     const data = await window.arkanDB.exportBackupData();
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -1351,10 +1269,6 @@
     }
   }
 
-  // ==========================================================================
-  // 9. NAVIGASI, MODAL HELPERS & EVENT LISTENERS
-  // ==========================================================================
-
   function switchView(viewName) {
     document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
     const targetView = document.getElementById(`view-${viewName}`);
@@ -1391,7 +1305,6 @@
   }
 
   function bindEvents() {
-    // Navigasi antar halaman
     document.addEventListener('click', (e) => {
       const navBtn = e.target.closest('[data-nav]');
       if (navBtn) {
@@ -1458,7 +1371,6 @@
       }
     });
 
-    // Tombol cepat di Beranda
     document.getElementById('btn-open-deposit').addEventListener('click', () => {
       openEditWalletModal('dana', 'deposit');
     });
@@ -1475,11 +1387,7 @@
         document.getElementById('cf-nominal').focus();
       }, 150);
     });
-    document.getElementById('btn-floating-badge').addEventListener('click', () => {
-      switchView('data');
-    });
 
-    // Tombol Pintas "000" pada seluruh form nominal
     bindNominalInputWithTripleZero(
       document.getElementById('topup-nominal'),
       document.getElementById('btn-topup-000'),
@@ -1505,7 +1413,6 @@
       document.getElementById('btn-cicil-000')
     );
 
-    // Clear nominal top up
     document.getElementById('btn-topup-clear').addEventListener('click', () => {
       document.getElementById('topup-nominal').value = '';
       state.adminManuallyEdited = false;
@@ -1513,7 +1420,6 @@
       document.getElementById('topup-nominal').focus();
     });
 
-    // Edit manual biaya admin & potongan modal
     document.getElementById('topup-admin').addEventListener('input', (e) => {
       state.adminManuallyEdited = true;
       const v = parseRupiahInput(e.target.value);
@@ -1531,7 +1437,6 @@
       document.getElementById('summary-net-profit').textContent = formatRp(totalBill - v);
     });
 
-    // Segmented Control Metode Pembayaran (Tunai / Transfer / Kasbon)
     document.querySelectorAll('#payment-method-control .seg-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('#payment-method-control .seg-btn').forEach((b) => b.classList.remove('active'));
@@ -1548,7 +1453,6 @@
       });
     });
 
-    // Submit Forms
     document.getElementById('form-topup').addEventListener('submit', handleTopUpSubmit);
     document.getElementById('form-cashflow').addEventListener('submit', handleCashflowSubmit);
     document.getElementById('form-add-wallet').addEventListener('submit', handleAddWalletSubmit);
@@ -1556,7 +1460,6 @@
     document.getElementById('form-edit-tx').addEventListener('submit', handleEditTransactionSubmit);
     document.getElementById('form-cicil').addEventListener('submit', handleCicilSubmit);
 
-    // Confirm Hapus
     document.getElementById('btn-confirm-yes').addEventListener('click', async () => {
       closeModal('modal-confirm');
       if (typeof state.confirmCallback === 'function') {
@@ -1565,32 +1468,25 @@
       }
     });
 
-    // Filter Kasbon & Laporan
     document.getElementById('kasbon-search').addEventListener('input', renderKasbonPage);
     document.getElementById('kasbon-filter').addEventListener('change', renderKasbonPage);
     document.getElementById('report-period-filter').addEventListener('change', renderReportPage);
 
-    // Backup & Restore
     document.getElementById('btn-export-json').addEventListener('click', exportJSONBackup);
     document.getElementById('btn-export-csv').addEventListener('click', exportCSVReport);
     document.getElementById('input-restore-json').addEventListener('change', handleRestoreJSON);
     document.getElementById('btn-enable-notif').addEventListener('click', requestNotificationPermission);
 
-    // Status Online / Offline
     window.addEventListener('online', renderHeaderAndSchedule);
     window.addEventListener('offline', renderHeaderAndSchedule);
   }
 
-  // Registrasi Service Worker untuk 100% Offline PWA
   function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js').catch(() => {
-        // Abaikan jika dibuka langsung lewat file://
-      });
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
     }
   }
 
-  // Bootstrap Aplikasi
   document.addEventListener('DOMContentLoaded', async () => {
     registerServiceWorker();
     bindEvents();

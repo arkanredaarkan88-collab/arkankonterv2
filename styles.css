@@ -55,7 +55,7 @@ body {
   margin: 0 auto;
   min-height: 100vh;
   background-color: var(--bg-page);
-  padding-bottom: 92px;
+  padding-bottom: 76px;
   position: relative;
 }
 
@@ -66,9 +66,7 @@ body {
   display: block;
 }
 
-/* ==========================================================================
-   HEADER & HERO DASHBOARD
-   ========================================================================== */
+/* HEADER & HERO DASHBOARD */
 .hero-header {
   background: linear-gradient(160deg, #0284c7 0%, #0369a1 100%);
   color: #ffffff;
@@ -151,7 +149,6 @@ body {
   margin-top: 2px;
 }
 
-/* Banner Kuning Jadwal Isi Ulang */
 .schedule-banner {
   margin-top: 14px;
   background-color: var(--amber-bg);
@@ -203,7 +200,6 @@ body {
   white-space: nowrap;
 }
 
-/* Kartu Saldo Utama DANA */
 .primary-wallet-card {
   margin-top: 12px;
   background: #ffffff;
@@ -285,7 +281,6 @@ body {
   cursor: pointer;
 }
 
-/* Sub Headers untuk Halaman Lain */
 .sub-header {
   padding: 18px 16px 20px;
   color: #ffffff;
@@ -337,9 +332,6 @@ body {
   font-weight: 800;
 }
 
-/* ==========================================================================
-   BODY, CARDS & 3-BOX STATS
-   ========================================================================== */
 .page-body {
   padding: 14px 16px;
 }
@@ -389,7 +381,6 @@ body {
   cursor: pointer;
 }
 
-/* 3 Kotak Statistik */
 .stats-grid-3 {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -421,7 +412,6 @@ body {
   word-break: break-word;
 }
 
-/* Quick CTA Buttons */
 .quick-cta-row {
   display: grid;
   grid-template-columns: 1.25fr 1fr;
@@ -461,7 +451,6 @@ body {
   box-shadow: var(--shadow-sm);
 }
 
-/* Grid Dompet Lain & Bank */
 .wallets-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -516,9 +505,6 @@ body {
   border-color: var(--red-primary);
 }
 
-/* ==========================================================================
-   FORM TOP UP, TOMBOL PINTAS 000 & SEGMENTED CONTROL
-   ========================================================================== */
 .field-group {
   margin-bottom: 14px;
 }
@@ -572,7 +558,6 @@ body {
   color: var(--blue-dark);
 }
 
-/* Nominal Input + Tombol 000 */
 .nominal-input-row {
   display: flex;
   align-items: stretch;
@@ -707,7 +692,6 @@ body {
   margin-top: 5px;
 }
 
-/* Segmented Control (Tunai / Transfer / Kasbon) */
 .segmented-control {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -745,7 +729,6 @@ body {
   color: var(--amber-text);
 }
 
-/* Kotak Ringkasan Gelap */
 .summary-dark-box {
   background: var(--slate-dark);
   color: #ffffff;
@@ -787,9 +770,6 @@ body {
   box-shadow: 0 4px 14px rgba(2, 132, 199, 0.3);
 }
 
-/* ==========================================================================
-   LIST TRANSAKSI & TOMBOL EDIT / HAPUS
-   ========================================================================== */
 .tx-list {
   display: flex;
   flex-direction: column;
@@ -857,7 +837,6 @@ body {
   margin-top: 5px;
 }
 
-/* Badges */
 .badge-pill {
   font-size: 10px;
   font-weight: 800;
@@ -873,9 +852,6 @@ body {
 .badge-red-total { background: var(--red-soft); color: var(--red-primary); font-size: 12px; font-weight: 800; padding: 4px 10px; border-radius: 999px; }
 .badge-green-soft { background: var(--green-soft); color: var(--green-text); font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 999px; }
 
-/* ==========================================================================
-   HALAMAN KASBON / PIUTANG & FITUR CICIL
-   ========================================================================== */
 .filter-bar {
   display: flex;
   gap: 8px;
@@ -1005,9 +981,6 @@ body {
   border-bottom: none;
 }
 
-/* ==========================================================================
-   HALAMAN LAPORAN & DATA
-   ========================================================================== */
 .select-filter-sm {
   background: var(--bg-subtle);
   border: 1px solid var(--border-color);
@@ -1150,28 +1123,7 @@ body {
   margin: 14px 0;
 }
 
-/* ==========================================================================
-   FLOATING NETLIFY PILL & BOTTOM NAVIGATION
-   ========================================================================== */
-.floating-netlify-pill {
-  position: fixed;
-  right: 12px;
-  bottom: 70px;
-  z-index: 40;
-  background: #0f172a;
-  color: #f8fafc;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 999px;
-  padding: 6px 12px;
-  font-size: 11px;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.28);
-  cursor: pointer;
-}
-
+/* BOTTOM NAVIGATION */
 .bottom-nav {
   position: fixed;
   bottom: 0;
@@ -1217,9 +1169,7 @@ body {
   background: var(--amber-header);
 }
 
-/* ==========================================================================
-   MODALS & TOAST
-   ========================================================================== */
+/* MODALS & TOAST */
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -1356,7 +1306,6 @@ body {
   padding: 18px 8px;
 }
 
-/* Utility Classes */
 .hidden { display: none !important; }
 .text-green { color: var(--green-primary); }
 .text-emerald { color: #4ade80; }

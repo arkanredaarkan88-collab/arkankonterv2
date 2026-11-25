@@ -2,10 +2,6 @@
  * ============================================================================
  * ARKAN KONTER — MODUL DATABASE LOKAL (IndexedDB 100% OFFLINE)
  * ============================================================================
- * Menyimpan 3 Object Store utama:
- * 1. `wallets`      : Saldo Utama DANA, Tunai Laci, OVO, GoPay, ShopeePay, LinkAja, Bank, dll.
- * 2. `transactions` : Riwayat Top Up, Pengeluaran Operasional, Pemasukan Lain, & Pelunasan Cicilan.
- * 3. `debts`        : Buku Kasbon terakumulasi (1 Pelanggan = 1 Data Utang Aktif + Riwayat Cicilan).
  */
 
 const DB_NAME = 'ArkanKonterDB_V2';
@@ -26,9 +22,6 @@ class ArkanDB {
     this.db = null;
   }
 
-  /**
-   * Membuka koneksi IndexedDB dan menginisialisasi tabel & saldo bawaan.
-   */
   async init() {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -55,7 +48,6 @@ class ArkanDB {
 
       request.onsuccess = async (event) => {
         this.db = event.target.result;
-        // Pastikan wallet default selalu tersedia jika store kosong
         const existingWallets = await this.getAll('wallets');
         if (existingWallets.length === 0) {
           for (const w of DEFAULT_WALLETS) {
@@ -71,9 +63,6 @@ class ArkanDB {
     });
   }
 
-  /**
-   * Mengambil seluruh data dari sebuah Object Store.
-   */
   getAll(storeName) {
     return new Promise((resolve, reject) => {
       const tx = this.db.transaction(storeName, 'readonly');
@@ -84,9 +73,6 @@ class ArkanDB {
     });
   }
 
-  /**
-   * Mengambil satu record berdasarkan primary key.
-   */
   getById(storeName, id) {
     return new Promise((resolve, reject) => {
       const tx = this.db.transaction(storeName, 'readonly');
@@ -97,9 +83,6 @@ class ArkanDB {
     });
   }
 
-  /**
-   * Menyimpan atau memperbarui record pada Object Store.
-   */
   put(storeName, item) {
     return new Promise((resolve, reject) => {
       const tx = this.db.transaction(storeName, 'readwrite');
@@ -110,9 +93,6 @@ class ArkanDB {
     });
   }
 
-  /**
-   * Menghapus satu record berdasarkan primary key.
-   */
   delete(storeName, id) {
     return new Promise((resolve, reject) => {
       const tx = this.db.transaction(storeName, 'readwrite');
@@ -123,9 +103,6 @@ class ArkanDB {
     });
   }
 
-  /**
-   * Mengosongkan seluruh isi Object Store (digunakan saat Restore JSON).
-   */
   clearStore(storeName) {
     return new Promise((resolve, reject) => {
       const tx = this.db.transaction(storeName, 'readwrite');
@@ -136,9 +113,6 @@ class ArkanDB {
     });
   }
 
-  /**
-   * Ekspor seluruh database ke format objek JSON untuk backup.
-   */
   async exportBackupData() {
     const [wallets, transactions, debts] = await Promise.all([
       this.getAll('wallets'),
@@ -155,9 +129,6 @@ class ArkanDB {
     };
   }
 
-  /**
-   * Restore seluruh database dari file backup JSON.
-   */
   async importBackupData(payload) {
     if (!payload || !Array.isArray(payload.wallets) || !Array.isArray(payload.transactions)) {
       throw new Error('Format file backup JSON tidak valid.');
