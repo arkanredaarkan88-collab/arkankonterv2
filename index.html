@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0284c7" />
+  <meta name="description" content="Arkan Konter - Aplikasi Kasir & Pembukuan Top Up E-Wallet 100% Offline" />
+  <title>Arkan Konter — Kasir & Pembukuan Offline</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/png" href="icon-192.png" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app" class="app-shell">
+
+    <!-- =================================================================== -->
+    <!-- HALAMAN 1: BERANDA (DASHBOARD GABUNGAN TERBAIK)                      -->
+    <!-- =================================================================== -->
+    <section id="view-beranda" class="view active">
+      <!-- Header Biru Modern -->
+      <header class="hero-header">
+        <div class="hero-top-row">
+          <div class="status-pill" id="offline-badge">
+            <span class="status-dot"></span>
+            <span id="offline-status-text">Offline Ready</span>
+          </div>
+          <div class="hero-actions">
+            <button type="button" class="btn-glass" id="btn-open-deposit" title="Tambah Saldo / Deposit">
+              + Deposit
+            </button>
+            <button type="button" class="btn-glass btn-glass-icon" data-nav="data" title="Pengaturan Data & Admin">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              <span>Data</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="hero-title-block">
+          <h1>Arkan Konter</h1>
+          <p id="current-date-display">Kamis, 26 November 2026</p>
+        </div>
+
+        <!-- Banner Kuning Jadwal Isi Ulang (Di Atas Kartu Saldo) -->
+        <div class="schedule-banner" id="dashboard-schedule-banner">
+          <div class="schedule-banner-left">
+            <span class="schedule-icon">🔔</span>
+            <div>
+              <strong>Jadwal Rutin Isi Ulang: Selasa &amp; Jumat</strong>
+              <p id="schedule-banner-sub">Berikutnya: Jumat • Arus kas sehat.</p>
+            </div>
+          </div>
+          <span class="schedule-chip" id="schedule-countdown-chip">2 Hari</span>
+        </div>
+
+        <!-- Kartu Saldo Utama DANA -->
+        <div class="primary-wallet-card">
+          <div class="pw-top">
+            <div>
+              <span class="pw-label" id="primary-wallet-name">Saldo Utama DANA</span>
+              <span class="pw-sub">Dompet transaksi utama</span>
+            </div>
+            <button type="button" class="btn-chip-edit" id="btn-edit-primary-wallet">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              <span>Edit</span>
+            </button>
+          </div>
+          <div class="pw-amount" id="primary-wallet-balance">Rp 0</div>
+          <div class="pw-footer">
+            <div class="cash-label">
+              <span>💵</span>
+              <span>Tunai Laci:</span>
+            </div>
+            <button type="button" class="cash-value-btn" id="btn-edit-cash-wallet">
+              <span id="cash-wallet-balance">Rp 0</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main class="page-body">
+        <!-- 3 Kotak Statistik (OMZET, UNTUNG BERSIH, TOTAL KASBON) -->
+        <div class="stats-grid-3">
+          <div class="stat-box">
+            <span class="stat-label">OMZET HARI INI</span>
+            <strong class="stat-val" id="stat-omzet">Rp 0</strong>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">UNTUNG BERSIH</span>
+            <strong class="stat-val text-green" id="stat-profit">Rp 0</strong>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">TOTAL KASBON</span>
+            <strong class="stat-val text-amber" id="stat-kasbon">Rp 0</strong>
+          </div>
+        </div>
+
+        <!-- 2 Tombol Aksi Utama -->
+        <div class="quick-cta-row">
+          <button type="button" class="btn-cta-primary" data-nav="topup">
+            <span>⚡</span>
+            <span>Transaksi Top Up</span>
+          </button>
+          <button type="button" class="btn-cta-secondary" id="btn-quick-expense">
+            <span class="text-red">−</span>
+            <span>Pengeluaran</span>
+          </button>
+        </div>
+
+        <!-- Grid Saldo Dompet Lain & Bank -->
+        <div class="card">
+          <div class="card-header-row">
+            <h2 class="card-title-sm">SALDO DOMPET LAIN &amp; BANK</h2>
+            <button type="button" class="link-action" data-nav="data">+ Tambah Akun</button>
+          </div>
+          <div class="wallets-grid" id="other-wallets-grid">
+            <!-- Diisi dinamis oleh JS -->
+          </div>
+        </div>
+
+        <!-- Aktivitas Terakhir dengan tombol Edit & Hapus -->
+        <div class="card">
+          <div class="card-header-row">
+            <h2 class="card-title-sm">AKTIVITAS TERAKHIR</h2>
+            <button type="button" class="link-action" data-nav="laporan">Semua →</button>
+          </div>
+          <div id="recent-transactions-list" class="tx-list">
+            <div class="empty-state">Belum ada transaksi.</div>
+          </div>
+        </div>
+      </main>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- HALAMAN 2: TOP UP / KASIR (GABUNGAN FORM & PINTAS 000)              -->
+    <!-- =================================================================== -->
+    <section id="view-topup" class="view">
+      <header class="sub-header header-blue">
+        <div class="sub-header-top">
+          <div>
+            <h2>Kasir Top Up E-Wallet</h2>
+            <p>&lt;20rb (3rb) • 20-120rb (5rb) • 120rb+ (10rb) • 300rb+ (15rb)</p>
+          </div>
+          <span class="pill-light" id="topup-offline-pill">Offline Ready</span>
+        </div>
+      </header>
+
+      <main class="page-body">
+        <form id="form-topup" class="card form-card" autocomplete="off">
+          <!-- Pilih E-Wallet -->
+          <div class="field-group">
+            <div class="field-label-row">
+              <label class="field-label">PILIH E-WALLET / SUMBER SALDO</label>
+              <span class="wallet-sisa-badge" id="selected-wallet-sisa">Sisa: Rp 0</span>
+            </div>
+            <div class="wallet-selector-grid" id="topup-wallet-selector">
+              <!-- Diisi dinamis oleh JS -->
+            </div>
+          </div>
+
+          <!-- Input Nominal + Tombol Pintas 000 -->
+          <div class="field-group">
+            <label class="field-label" for="topup-nominal">NOMINAL TOP UP (RP)</label>
+            <div class="nominal-input-row">
+              <input
+                type="text"
+                inputmode="numeric"
+                id="topup-nominal"
+                class="input-nominal-big"
+                placeholder="0"
+                value=""
+              />
+              <button type="button" class="btn-triple-zero" id="btn-topup-000" title="Tambah tiga nol (×1.000)">
+                000
+              </button>
+              <button type="button" class="btn-clear-input" id="btn-topup-clear" title="Hapus Nominal">
+                C
+              </button>
+            </div>
+
+            <!-- Preset Nominal Cepat -->
+            <div class="preset-grid">
+              <button type="button" class="preset-chip" data-nominal="10000">10rb</button>
+              <button type="button" class="preset-chip" data-nominal="20000">20rb</button>
+              <button type="button" class="preset-chip" data-nominal="50000">50rb</button>
+              <button type="button" class="preset-chip" data-nominal="100000">100rb</button>
+              <button type="button" class="preset-chip" data-nominal="150000">150rb</button>
+              <button type="button" class="preset-chip" data-nominal="200000">200rb</button>
+              <button type="button" class="preset-chip" data-nominal="300000">300rb</button>
+              <button type="button" class="preset-chip" data-nominal="500000">500rb</button>
+            </div>
+          </div>
+
+          <!-- Biaya Admin & Potongan Modal -->
+          <div class="grid-2-col">
+            <div class="field-group">
+              <label class="field-label" for="topup-admin">BIAYA ADMIN (OTOMATIS)</label>
+              <input
+                type="text"
+                inputmode="numeric"
+                id="topup-admin"
+                class="input-control input-admin-green"
+                value="0"
+              />
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="topup-modal">POTONGAN MODAL</label>
+              <input
+                type="text"
+                inputmode="numeric"
+                id="topup-modal"
+                class="input-control"
+                value="0"
+              />
+            </div>
+          </div>
+
+          <!-- Segmented Control Metode Pembayaran -->
+          <div class="field-group">
+            <label class="field-label">PEMBAYARAN PELANGGAN</label>
+            <div class="segmented-control" id="payment-method-control">
+              <button type="button" class="seg-btn active" data-method="tunai">
+                <span>💵</span>
+                <span>Tunai</span>
+              </button>
+              <button type="button" class="seg-btn" data-method="transfer">
+                <span>🏦</span>
+                <span>Transfer</span>
+              </button>
+              <button type="button" class="seg-btn" data-method="kasbon">
+                <span>📒</span>
+                <span>Kasbon</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Kolom Nama Pelanggan (Wajib & Muncul Menonjol saat Kasbon) -->
+          <div class="field-group kasbon-name-box hidden" id="kasbon-customer-group">
+            <label class="field-label text-amber" for="topup-customer-name">
+              NAMA PELANGGAN KASBON * (1 Orang = 1 Akumulasi Utang)
+            </label>
+            <input
+              type="text"
+              id="topup-customer-name"
+              list="existing-debtors-datalist"
+              class="input-control input-kasbon"
+              placeholder="Ketik nama pelanggan (misal: Imam)"
+            />
+            <datalist id="existing-debtors-datalist"></datalist>
+            <small class="helper-text" id="kasbon-merge-hint">
+              Jika nama sudah ada di daftar Kasbon aktif, utang otomatis digabungkan.
+            </small>
+          </div>
+
+          <!-- Catatan / No HP -->
+          <div class="field-group">
+            <label class="field-label" for="topup-note">CATATAN / NO. HP TUJUAN (OPSIONAL)</label>
+            <input
+              type="text"
+              id="topup-note"
+              class="input-control"
+              placeholder="Contoh: DANA 0857xxx"
+            />
+          </div>
+
+          <!-- Kotak Gelap Ringkasan Total Tagihan & Laba Bersih -->
+          <div class="summary-dark-box">
+            <div class="summary-row-main">
+              <span>Total Tagihan:</span>
+              <strong id="summary-total-bill">Rp 0</strong>
+            </div>
+            <div class="summary-row-sub">
+              <span>Laba Bersih:</span>
+              <strong class="text-emerald" id="summary-net-profit">Rp 0</strong>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-submit-blue">
+            ✓ Simpan Transaksi
+          </button>
+        </form>
+      </main>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- HALAMAN 3: KASBON / PIUTANG (1 ORANG = 1 UTANG + FITUR CICIL)       -->
+    <!-- =================================================================== -->
+    <section id="view-kasbon" class="view">
+      <header class="sub-header header-amber">
+        <div class="sub-header-top">
+          <div>
+            <h2>Buku Kasbon &amp; Piutang</h2>
+            <p>Tagih sebelum Selasa &amp; Jumat • 1 Pelanggan = 1 Akumulasi Utang</p>
+          </div>
+          <div class="header-total-box">
+            <span>BELUM LUNAS</span>
+            <strong id="kasbon-header-total">Rp 0</strong>
+          </div>
+        </div>
+      </header>
+
+      <main class="page-body">
+        <!-- Pencarian & Filter -->
+        <div class="filter-bar">
+          <div class="search-input-wrap">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="kasbon-search" placeholder="Cari nama pelanggan..." />
+          </div>
+          <select id="kasbon-filter" class="select-filter">
+            <option value="all">Semua Status</option>
+            <option value="unpaid">Belum Lunas</option>
+            <option value="paid">Sudah Lunas</option>
+          </select>
+        </div>
+
+        <!-- Daftar Piutang Belum Lunas -->
+        <div class="card" id="card-unpaid-debts">
+          <div class="card-header-row">
+            <div>
+              <h3 class="card-title">Piutang Belum Lunas</h3>
+              <p class="card-subtitle">Gunakan tombol Bayar/Cicil untuk pelunasan bertahap.</p>
+            </div>
+            <span class="badge-red-total" id="unpaid-debts-badge">Rp 0</span>
+          </div>
+          <div id="unpaid-debts-list" class="debt-list">
+            <div class="empty-state">Tidak ada piutang aktif. Arus kas sehat!</div>
+          </div>
+        </div>
+
+        <!-- Riwayat Piutang Lunas -->
+        <div class="card" id="card-paid-debts">
+          <div class="card-header-row">
+            <h3 class="card-title">Riwayat Piutang Lunas</h3>
+            <span class="badge-green-soft" id="paid-debts-count">0 Lunas</span>
+          </div>
+          <div id="paid-debts-list" class="debt-list">
+            <div class="empty-state">Belum ada riwayat piutang lunas.</div>
+          </div>
+        </div>
+      </main>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- HALAMAN 4: LAPORAN KEUANGAN & CATAT KAS                             -->
+    <!-- =================================================================== -->
+    <section id="view-laporan" class="view">
+      <header class="sub-header header-slate">
+        <div class="sub-header-top">
+          <div>
+            <h2>Laporan Keuangan</h2>
+            <p>Ringkasan omzet, profit admin, pengeluaran &amp; total aset</p>
+          </div>
+          <button type="button" class="btn-glass" data-nav="data">⚙️ Data &amp; Backup</button>
+        </div>
+      </header>
+
+      <main class="page-body">
+        <!-- Ringkasan Keuangan -->
+        <div class="card">
+          <div class="card-header-row">
+            <h3 class="card-title">Ringkasan Keuangan</h3>
+            <select id="report-period-filter" class="select-filter-sm">
+              <option value="today">Hari Ini</option>
+              <option value="month">Bulan Ini</option>
+              <option value="all">Semua Waktu</option>
+            </select>
+          </div>
+
+          <div class="report-metrics-grid">
+            <div class="metric-tile">
+              <span>Total Omzet Top Up</span>
+              <strong id="rep-omzet">Rp 0</strong>
+            </div>
+            <div class="metric-tile">
+              <span>Profit Admin (Lunas)</span>
+              <strong class="text-green" id="rep-profit">Rp 0</strong>
+            </div>
+            <div class="metric-tile">
+              <span>Pengeluaran Ops</span>
+              <strong class="text-red" id="rep-expense">Rp 0</strong>
+            </div>
+            <div class="metric-tile">
+              <span>Laba Bersih</span>
+              <strong id="rep-net">Rp 0</strong>
+            </div>
+          </div>
+
+          <div class="total-asset-box">
+            <span>Total Aset Usaha (Saldo Dompet + Laci Tunai + Piutang Aktif)</span>
+            <strong id="rep-total-assets">Rp 0</strong>
+          </div>
+        </div>
+
+        <!-- Catat Pengeluaran / Pemasukan Lain -->
+        <div class="card" id="card-cashflow-form">
+          <h3 class="card-title mb-12">Catat Pengeluaran / Pemasukan Lain</h3>
+          <form id="form-cashflow" autocomplete="off">
+            <div class="field-group">
+              <label class="field-label" for="cf-type">Jenis Arus Kas</label>
+              <select id="cf-type" class="input-control">
+                <option value="expense">Pengeluaran Operasional (Kuota, Bensin, Listrik, dll)</option>
+                <option value="income">Pemasukan Lain / Tambah Modal</option>
+              </select>
+            </div>
+
+            <div class="field-group">
+              <label class="field-label" for="cf-wallet">Akun Terkait</label>
+              <select id="cf-wallet" class="input-control">
+                <!-- Diisi dinamis oleh JS -->
+              </select>
+            </div>
+
+            <div class="field-group">
+              <label class="field-label" for="cf-nominal">Nominal (Rp)</label>
+              <div class="nominal-input-row">
+                <input
+                  type="text"
+                  inputmode="numeric"
+                  id="cf-nominal"
+                  class="input-control"
+                  placeholder="Contoh: 15000"
+                />
+                <button type="button" class="btn-triple-zero btn-triple-zero-sm" id="btn-cf-000">000</button>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <label class="field-label" for="cf-note">Keterangan *</label>
+              <input
+                type="text"
+                id="cf-note"
+                class="input-control"
+                placeholder="Contoh: Beli paket data konter"
+                required
+              />
+            </div>
+
+            <button type="submit" class="btn-submit-dark">Simpan Catatan Kas</button>
+          </form>
+        </div>
+
+        <!-- Riwayat Lengkap Transaksi (Edit & Hapus) -->
+        <div class="card">
+          <div class="card-header-row">
+            <h3 class="card-title">Riwayat Semua Transaksi</h3>
+            <span class="badge-muted" id="all-tx-count">0 transaksi</span>
+          </div>
+          <div id="all-transactions-list" class="tx-list">
+            <div class="empty-state">Belum ada riwayat transaksi.</div>
+          </div>
+        </div>
+      </main>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- HALAMAN 5: DATA (SKEMA ADMIN, KELOLA DOMPET, BACKUP JSON & CSV)       -->
+    <!-- =================================================================== -->
+    <section id="view-data" class="view">
+      <header class="sub-header header-slate">
+        <div class="sub-header-top">
+          <div>
+            <h2>Data, Admin &amp; Backup</h2>
+            <p>Skema biaya admin, kelola dompet &amp; cadangan database lokal</p>
+          </div>
+          <button type="button" class="btn-glass" data-nav="beranda">← Beranda</button>
+        </div>
+      </header>
+
+      <main class="page-body">
+        <!-- Banner Pengingat Jadwal -->
+        <div class="schedule-banner schedule-banner-solid">
+          <div class="schedule-banner-left">
+            <span class="schedule-icon">📅</span>
+            <div>
+              <strong>Jadwal Rutin Isi Ulang: Selasa &amp; Jumat</strong>
+              <p id="data-schedule-note">Pastikan tagih kasbon sebelum hari kulakan saldo.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Skema Biaya Admin Berjenjang -->
+        <div class="card">
+          <h3 class="card-title mb-12">Skema Biaya Admin Berjenjang</h3>
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Nominal Top Up</th>
+                <th class="text-right">Biaya Admin</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Di bawah Rp 20.000</td>
+                <td class="text-right fw-bold">Rp 3.000</td>
+              </tr>
+              <tr>
+                <td>Rp 20.000 – Rp 120.000</td>
+                <td class="text-right fw-bold">Rp 5.000</td>
+              </tr>
+              <tr>
+                <td>Rp 120.001 – Rp 299.999</td>
+                <td class="text-right fw-bold">Rp 10.000</td>
+              </tr>
+              <tr>
+                <td>Rp 300.000 ke atas</td>
+                <td class="text-right fw-bold">Rp 15.000</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Tambah & Kelola Dompet / Akun Baru -->
+        <div class="card">
+          <h3 class="card-title mb-12">Tambah Dompet / Akun Baru</h3>
+          <form id="form-add-wallet" autocomplete="off">
+            <div class="field-group">
+              <label class="field-label" for="new-wallet-name">Nama Dompet / Bank</label>
+              <input
+                type="text"
+                id="new-wallet-name"
+                class="input-control"
+                placeholder="Contoh: SeaBank / BRI"
+                required
+              />
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="new-wallet-balance">Saldo Awal (Rp)</label>
+              <div class="nominal-input-row">
+                <input
+                  type="text"
+                  inputmode="numeric"
+                  id="new-wallet-balance"
+                  class="input-control"
+                  value="0"
+                />
+                <button type="button" class="btn-triple-zero btn-triple-zero-sm" id="btn-newwallet-000">000</button>
+              </div>
+            </div>
+            <button type="submit" class="btn-outline-full">+ Tambah Dompet</button>
+          </form>
+
+          <div class="divider-line"></div>
+          <h4 class="card-title-sm mb-8">DAFTAR DOMPET TERSIMPAN (EDIT / HAPUS)</h4>
+          <div id="manage-wallets-list" class="manage-wallet-list"></div>
+        </div>
+
+        <!-- Notifikasi & Backup Data -->
+        <div class="card">
+          <h3 class="card-title">Notifikasi &amp; Backup Data</h3>
+          <p class="card-subtitle mb-12">
+            Data tersimpan 100% offline di perangkat (IndexedDB). Lakukan backup rutin agar data aman.
+          </p>
+          <div class="backup-btn-stack">
+            <button type="button" class="btn-outline-full" id="btn-enable-notif">
+              🔔 Aktifkan Notifikasi Pengingat Browser
+            </button>
+            <button type="button" class="btn-green-full" id="btn-export-json">
+              📥 Download Backup Data (.JSON)
+            </button>
+            <button type="button" class="btn-dark-full" id="btn-export-csv">
+              📊 Export Laporan Transaksi (.CSV)
+            </button>
+            <label class="btn-outline-full file-upload-label" for="input-restore-json">
+              📤 Restore Data dari File .JSON
+              <input type="file" id="input-restore-json" accept=".json,application/json" hidden />
+            </label>
+          </div>
+        </div>
+      </main>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- FLOATING PILL "Powered by Netlify" & BOTTOM NAVIGATION (4 MENU)     -->
+    <!-- =================================================================== -->
+    <button type="button" class="floating-netlify-pill" id="btn-floating-badge" title="Info Aplikasi & Backup">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="#2dd4bf"><polygon points="12 2 22 12 12 22 2 12 12 2"/></svg>
+      <span>Powered by Netlify</span>
+    </button>
+
+    <nav class="bottom-nav" aria-label="Navigasi Utama">
+      <button type="button" class="nav-item active" data-nav="beranda">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>Beranda</span>
+      </button>
+      <button type="button" class="nav-item" data-nav="topup">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span>Top Up</span>
+      </button>
+      <button type="button" class="nav-item" data-nav="kasbon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg>
+        <span>Kasbon</span>
+        <span class="nav-badge hidden" id="nav-kasbon-dot"></span>
+      </button>
+      <button type="button" class="nav-item" data-nav="laporan">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span>Laporan</span>
+      </button>
+    </nav>
+
+    <!-- =================================================================== -->
+    <!-- MODAL 1: EDIT SALDO DOMPET / DEPOSIT                                -->
+    <!-- =================================================================== -->
+    <div id="modal-wallet" class="modal-backdrop hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 id="modal-wallet-title">Edit Saldo Dompet</h3>
+          <button type="button" class="modal-close" data-close-modal="modal-wallet">✕</button>
+        </div>
+        <form id="form-edit-wallet" autocomplete="off">
+          <input type="hidden" id="edit-wallet-id" />
+          <input type="hidden" id="edit-wallet-mode" value="edit" />
+          <div class="field-group" id="edit-wallet-select-wrap" style="display:none;">
+            <label class="field-label" for="deposit-wallet-select">Pilih Dompet Tujuan Deposit</label>
+            <select id="deposit-wallet-select" class="input-control"></select>
+          </div>
+          <div class="field-group" id="edit-wallet-name-wrap">
+            <label class="field-label" for="edit-wallet-name">Nama Dompet</label>
+            <input type="text" id="edit-wallet-name" class="input-control" required />
+          </div>
+          <div class="field-group">
+            <label class="field-label" id="edit-wallet-amount-label" for="edit-wallet-amount">Saldo Saat Ini (Rp)</label>
+            <div class="nominal-input-row">
+              <input type="text" inputmode="numeric" id="edit-wallet-amount" class="input-control" required />
+              <button type="button" class="btn-triple-zero btn-triple-zero-sm" id="btn-modalwallet-000">000</button>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn-cancel" data-close-modal="modal-wallet">Batal</button>
+            <button type="submit" class="btn-save">Simpan</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- MODAL 2: EDIT TRANSAKSI                                             -->
+    <!-- =================================================================== -->
+    <div id="modal-edit-tx" class="modal-backdrop hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Edit Transaksi</h3>
+          <button type="button" class="modal-close" data-close-modal="modal-edit-tx">✕</button>
+        </div>
+        <form id="form-edit-tx" autocomplete="off">
+          <input type="hidden" id="edit-tx-id" />
+          <div class="field-group">
+            <label class="field-label" for="edit-tx-wallet">Dompet / Akun</label>
+            <select id="edit-tx-wallet" class="input-control"></select>
+          </div>
+          <div class="grid-2-col">
+            <div class="field-group">
+              <label class="field-label" for="edit-tx-nominal">Nominal (Rp)</label>
+              <input type="text" inputmode="numeric" id="edit-tx-nominal" class="input-control" required />
+            </div>
+            <div class="field-group" id="edit-tx-admin-wrap">
+              <label class="field-label" for="edit-tx-admin">Biaya Admin (Rp)</label>
+              <input type="text" inputmode="numeric" id="edit-tx-admin" class="input-control" />
+            </div>
+          </div>
+          <div class="field-group" id="edit-tx-method-wrap">
+            <label class="field-label" for="edit-tx-method">Metode Pembayaran</label>
+            <select id="edit-tx-method" class="input-control">
+              <option value="tunai">Tunai (Laci)</option>
+              <option value="transfer">Transfer (Rek. Bank)</option>
+              <option value="kasbon">Kasbon (Piutang)</option>
+            </select>
+          </div>
+          <div class="field-group" id="edit-tx-customer-wrap">
+            <label class="field-label" for="edit-tx-customer">Nama Pelanggan (jika Kasbon)</label>
+            <input type="text" id="edit-tx-customer" class="input-control" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="edit-tx-note">Catatan</label>
+            <input type="text" id="edit-tx-note" class="input-control" />
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn-cancel" data-close-modal="modal-edit-tx">Batal</button>
+            <button type="submit" class="btn-save">Update Transaksi</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- MODAL 3: BAYAR / CICIL KASBON (INSTALLMENT)                         -->
+    <!-- =================================================================== -->
+    <div id="modal-cicil" class="modal-backdrop hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Bayar / Cicil Kasbon</h3>
+          <button type="button" class="modal-close" data-close-modal="modal-cicil">✕</button>
+        </div>
+        <form id="form-cicil" autocomplete="off">
+          <input type="hidden" id="cicil-debt-id" />
+          <div class="cicil-info-box">
+            <div>
+              <span class="cicil-lbl">Pelanggan</span>
+              <strong id="cicil-customer-name">-</strong>
+            </div>
+            <div class="text-right">
+              <span class="cicil-lbl">Sisa Utang</span>
+              <strong class="text-red" id="cicil-remaining-display">Rp 0</strong>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="cicil-amount">Nominal Bayar / Cicil (Rp)</label>
+            <div class="nominal-input-row">
+              <input type="text" inputmode="numeric" id="cicil-amount" class="input-control" required />
+              <button type="button" class="btn-triple-zero btn-triple-zero-sm" id="btn-cicil-000">000</button>
+            </div>
+            <div class="cicil-quick-btns">
+              <button type="button" class="preset-chip" id="btn-cicil-half">Bayar 50%</button>
+              <button type="button" class="preset-chip preset-chip-green" id="btn-cicil-full">Lunasi Semua</button>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="cicil-target-wallet">Masuk ke Saldo Mana?</label>
+            <select id="cicil-target-wallet" class="input-control">
+              <option value="cash">💵 Tunai Laci</option>
+              <option value="bank">🏦 Transfer (Rek. Bank)</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="cicil-note">Catatan Cicilan (Opsional)</label>
+            <input type="text" id="cicil-note" class="input-control" placeholder="Contoh: Cicilan ke-1" />
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-cancel" data-close-modal="modal-cicil">Batal</button>
+            <button type="submit" class="btn-save btn-save-green">✓ Simpan Pembayaran</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- MODAL 4: KONFIRMASI HAPUS (AMAN DI SEMUA WEBVIEW/APK)               -->
+    <!-- =================================================================== -->
+    <div id="modal-confirm" class="modal-backdrop hidden">
+      <div class="modal-card modal-card-sm">
+        <div class="modal-header">
+          <h3 id="confirm-title">Konfirmasi Hapus</h3>
+          <button type="button" class="modal-close" data-close-modal="modal-confirm">✕</button>
+        </div>
+        <p id="confirm-message" class="confirm-text">Apakah Anda yakin ingin menghapus data ini?</p>
+        <div class="modal-footer">
+          <button type="button" class="btn-cancel" data-close-modal="modal-confirm">Batal</button>
+          <button type="button" class="btn-danger" id="btn-confirm-yes">Ya, Hapus</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notifikasi -->
+    <div id="toast" class="toast hidden"></div>
+  </div>
+
+  <script src="db.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
