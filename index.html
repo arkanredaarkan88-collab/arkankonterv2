@@ -15,7 +15,7 @@
   <div id="app" class="app-shell">
 
     <!-- =================================================================== -->
-    <!-- HALAMAN 1: BERANDA (DASHBOARD GABUNGAN TERBAIK)                      -->
+    <!-- HALAMAN 1: BERANDA (DASHBOARD)                                      -->
     <!-- =================================================================== -->
     <section id="view-beranda" class="view active">
       <header class="hero-header">
@@ -95,16 +95,22 @@
           </div>
         </div>
 
-        <!-- 2 Tombol Aksi Utama -->
-        <div class="quick-cta-row">
-          <button type="button" class="btn-cta-primary" data-nav="topup">
+        <!-- Tombol Aksi Utama (Top Up + Oper Saldo + Pengeluaran) -->
+        <div class="quick-cta-stack">
+          <button type="button" class="btn-cta-primary btn-cta-full" data-nav="topup">
             <span>⚡</span>
             <span>Transaksi Top Up</span>
           </button>
-          <button type="button" class="btn-cta-secondary" id="btn-quick-expense">
-            <span class="text-red">−</span>
-            <span>Pengeluaran</span>
-          </button>
+          <div class="quick-cta-subrow">
+            <button type="button" class="btn-cta-secondary btn-cta-oper" id="btn-open-oper-saldo">
+              <span class="text-blue">⇄</span>
+              <span>Oper Saldo</span>
+            </button>
+            <button type="button" class="btn-cta-secondary" id="btn-quick-expense">
+              <span class="text-red">−</span>
+              <span>Pengeluaran</span>
+            </button>
+          </div>
         </div>
 
         <!-- Grid Saldo Dompet Lain & Bank -->
@@ -130,7 +136,7 @@
     </section>
 
     <!-- =================================================================== -->
-    <!-- HALAMAN 2: TOP UP / KASIR (GABUNGAN FORM & PINTAS 000)              -->
+    <!-- HALAMAN 2: TOP UP / KASIR (FORM, PINTAS 000 & AUTOCOMPLETE TUJUAN)  -->
     <!-- =================================================================== -->
     <section id="view-topup" class="view">
       <header class="sub-header header-blue">
@@ -237,19 +243,33 @@
               placeholder="Ketik nama pelanggan (misal: Imam)"
             />
             <datalist id="existing-debtors-datalist"></datalist>
+
+            <label class="field-label text-amber mt-8" for="topup-customer-phone">
+              NO. WHATSAPP PELANGGAN (OPSIONAL — UNTUK TAGIH 1-KLIK)
+            </label>
+            <input
+              type="tel"
+              inputmode="tel"
+              id="topup-customer-phone"
+              class="input-control input-kasbon"
+              placeholder="Contoh: 085712345678"
+            />
             <small class="helper-text" id="kasbon-merge-hint">
               Jika nama sudah ada di daftar Kasbon aktif, utang otomatis digabungkan.
             </small>
           </div>
 
           <div class="field-group">
-            <label class="field-label" for="topup-note">CATATAN / NO. HP TUJUAN (OPSIONAL)</label>
+            <label class="field-label" for="topup-note">NO. HP TUJUAN / CATATAN (SARAN OTOMATIS)</label>
             <input
               type="text"
               id="topup-note"
+              list="saved-targets-datalist"
               class="input-control"
-              placeholder="Contoh: DANA 0857xxx"
+              placeholder="Contoh: DANA 0857xxx (Budi)"
             />
+            <datalist id="saved-targets-datalist"></datalist>
+            <div id="recent-targets-chips" class="recent-chips-row"></div>
           </div>
 
           <div class="summary-dark-box">
@@ -271,7 +291,7 @@
     </section>
 
     <!-- =================================================================== -->
-    <!-- HALAMAN 3: KASBON / PIUTANG (1 ORANG = 1 UTANG + FITUR CICIL)       -->
+    <!-- HALAMAN 3: KASBON / PIUTANG (1 ORANG = 1 UTANG + CICIL + TAGIH WA)  -->
     <!-- =================================================================== -->
     <section id="view-kasbon" class="view">
       <header class="sub-header header-amber">
@@ -304,7 +324,7 @@
           <div class="card-header-row">
             <div>
               <h3 class="card-title">Piutang Belum Lunas</h3>
-              <p class="card-subtitle">Gunakan tombol Bayar/Cicil untuk pelunasan bertahap.</p>
+              <p class="card-subtitle">Gunakan tombol Bayar/Cicil atau Tagih WA 1-klik.</p>
             </div>
             <span class="badge-red-total" id="unpaid-debts-badge">Rp 0</span>
           </div>
@@ -326,7 +346,7 @@
     </section>
 
     <!-- =================================================================== -->
-    <!-- HALAMAN 4: LAPORAN KEUANGAN & CATAT KAS                             -->
+    <!-- HALAMAN 4: LAPORAN KEUANGAN, CATAT KAS & PENCARIAN RIWAYAT          -->
     <!-- =================================================================== -->
     <section id="view-laporan" class="view">
       <header class="sub-header header-slate">
@@ -360,7 +380,7 @@
               <strong class="text-green" id="rep-profit">Rp 0</strong>
             </div>
             <div class="metric-tile">
-              <span>Pengeluaran Ops</span>
+              <span>Pengeluaran &amp; Biaya Tf</span>
               <strong class="text-red" id="rep-expense">Rp 0</strong>
             </div>
             <div class="metric-tile">
@@ -425,6 +445,27 @@
             <h3 class="card-title">Riwayat Semua Transaksi</h3>
             <span class="badge-muted" id="all-tx-count">0 transaksi</span>
           </div>
+
+          <!-- Kotak Pencarian & Filter Jenis Transaksi -->
+          <div class="tx-search-bar">
+            <div class="search-input-wrap search-input-compact">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input
+                type="text"
+                id="report-tx-search"
+                placeholder="Cari no. HP tujuan, nama, akun, nominal..."
+              />
+            </div>
+            <select id="report-tx-type-filter" class="select-filter-sm">
+              <option value="all">Semua</option>
+              <option value="topup">Top Up</option>
+              <option value="transfer_saldo">Oper Saldo</option>
+              <option value="expense">Pengeluaran</option>
+              <option value="installment">Cicilan</option>
+              <option value="income">Deposit/Masuk</option>
+            </select>
+          </div>
+
           <div id="all-transactions-list" class="tx-list">
             <div class="empty-state">Belum ada riwayat transaksi.</div>
           </div>
@@ -615,8 +656,12 @@
         <form id="form-edit-tx" autocomplete="off">
           <input type="hidden" id="edit-tx-id" />
           <div class="field-group">
-            <label class="field-label" for="edit-tx-wallet">Dompet / Akun</label>
+            <label class="field-label" id="edit-tx-wallet-label" for="edit-tx-wallet">Dompet / Akun</label>
             <select id="edit-tx-wallet" class="input-control"></select>
+          </div>
+          <div class="field-group" id="edit-tx-to-wallet-wrap" style="display:none;">
+            <label class="field-label" for="edit-tx-to-wallet">Ke Akun (Tujuan Oper Saldo)</label>
+            <select id="edit-tx-to-wallet" class="input-control"></select>
           </div>
           <div class="grid-2-col">
             <div class="field-group">
@@ -624,7 +669,7 @@
               <input type="text" inputmode="numeric" id="edit-tx-nominal" class="input-control" required />
             </div>
             <div class="field-group" id="edit-tx-admin-wrap">
-              <label class="field-label" for="edit-tx-admin">Biaya Admin (Rp)</label>
+              <label class="field-label" id="edit-tx-admin-label" for="edit-tx-admin">Biaya Admin (Rp)</label>
               <input type="text" inputmode="numeric" id="edit-tx-admin" class="input-control" />
             </div>
           </div>
@@ -641,7 +686,7 @@
             <input type="text" id="edit-tx-customer" class="input-control" />
           </div>
           <div class="field-group">
-            <label class="field-label" for="edit-tx-note">Catatan</label>
+            <label class="field-label" for="edit-tx-note">Catatan / No. HP Tujuan</label>
             <input type="text" id="edit-tx-note" class="input-control" />
           </div>
           <div class="modal-footer">
@@ -708,7 +753,86 @@
     </div>
 
     <!-- =================================================================== -->
-    <!-- MODAL 4: KONFIRMASI HAPUS                                           -->
+    <!-- MODAL 4: OPER / PINDAH SALDO ANTAR AKUN (KULAKAN)                   -->
+    <!-- =================================================================== -->
+    <div id="modal-oper-saldo" class="modal-backdrop hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>⇄ Oper / Pindah Saldo</h3>
+          <button type="button" class="modal-close" data-close-modal="modal-oper-saldo">✕</button>
+        </div>
+        <form id="form-oper-saldo" autocomplete="off">
+          <div class="field-group">
+            <label class="field-label" for="oper-from-wallet">Dari Akun (Sumber Dana)</label>
+            <select id="oper-from-wallet" class="input-control"></select>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="oper-to-wallet">Ke Akun (Tujuan Saldo)</label>
+            <select id="oper-to-wallet" class="input-control"></select>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="oper-amount">Nominal Dipindahkan (Rp)</label>
+            <div class="nominal-input-row">
+              <input type="text" inputmode="numeric" id="oper-amount" class="input-control" placeholder="Contoh: 500.000" required />
+              <button type="button" class="btn-triple-zero btn-triple-zero-sm" id="btn-oper-000">000</button>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="oper-fee">Biaya Admin Transfer Bank (Opsional)</label>
+            <div class="nominal-input-row">
+              <input type="text" inputmode="numeric" id="oper-fee" class="input-control" value="0" />
+              <button type="button" class="preset-chip px-10" data-oper-fee="0">Gratis</button>
+              <button type="button" class="preset-chip px-10" data-oper-fee="2500">2.500</button>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="oper-note">Catatan (Opsional)</label>
+            <input type="text" id="oper-note" class="input-control" placeholder="Contoh: Kulakan isi saldo DANA" />
+          </div>
+
+          <div class="oper-preview-box" id="oper-preview-box">
+            <span>Total dipotong dari sumber: <strong id="oper-total-deduct">Rp 0</strong></span>
+            <span>Masuk ke tujuan: <strong class="text-green" id="oper-total-receive">Rp 0</strong></span>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-cancel" data-close-modal="modal-oper-saldo">Batal</button>
+            <button type="submit" class="btn-save">✓ Pindahkan Saldo</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- MODAL 5: SIMPAN NO. WHATSAPP PELANGGAN KASBON                       -->
+    <!-- =================================================================== -->
+    <div id="modal-debt-phone" class="modal-backdrop hidden">
+      <div class="modal-card modal-card-sm">
+        <div class="modal-header">
+          <h3>No. WhatsApp Pelanggan</h3>
+          <button type="button" class="modal-close" data-close-modal="modal-debt-phone">✕</button>
+        </div>
+        <form id="form-debt-phone" autocomplete="off">
+          <input type="hidden" id="phone-debt-id" />
+          <p class="confirm-text mb-12">Simpan nomor WA <strong id="phone-debt-customer">-</strong> agar tombol Tagih WA langsung membuka chat-nya:</p>
+          <div class="field-group">
+            <label class="field-label" for="phone-debt-input">Nomor WhatsApp</label>
+            <input type="tel" inputmode="tel" id="phone-debt-input" class="input-control" placeholder="Contoh: 085712345678" />
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn-cancel" data-close-modal="modal-debt-phone">Batal</button>
+            <button type="submit" class="btn-save btn-save-green">Simpan No. WA</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- MODAL 6: KONFIRMASI HAPUS                                           -->
     <!-- =================================================================== -->
     <div id="modal-confirm" class="modal-backdrop hidden">
       <div class="modal-card modal-card-sm">

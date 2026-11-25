@@ -121,7 +121,7 @@ class ArkanDB {
     ]);
     return {
       appName: 'Arkan Konter',
-      version: 2,
+      version: 2.2,
       exportedAt: new Date().toISOString(),
       wallets,
       transactions,

@@ -1,7 +1,7 @@
 /**
- * Service Worker Arkan Konter — 100% Full Offline Cache (v2.1 Clean)
+ * Service Worker Arkan Konter — 100% Full Offline Cache (v2.2)
  */
-const CACHE_NAME = 'arkan-konter-offline-v2.1';
+const CACHE_NAME = 'arkan-konter-offline-v2.2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

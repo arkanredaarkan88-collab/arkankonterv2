@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * ARKAN KONTER — LOGIKA UTAMA APLIKASI KASIR & PEMBUKUAN OFFLINE
+ * ARKAN KONTER — LOGIKA UTAMA APLIKASI KASIR & PEMBUKUAN OFFLINE (v2.2)
  * ============================================================================
  */
 
@@ -40,6 +40,14 @@
     if (nominal <= 120000) return 5000;
     if (nominal < 300000) return 10000;
     return 15000;
+  }
+
+  function normalizeIndonesianPhone(raw) {
+    const digits = String(raw || '').replace(/[^0-9]/g, '');
+    if (!digits) return '';
+    if (digits.startsWith('0')) return '62' + digits.slice(1);
+    if (digits.startsWith('8')) return '62' + digits;
+    return digits;
   }
 
   function bindNominalInputWithTripleZero(inputEl, zeroBtnEl, onChangeCallback) {
@@ -153,6 +161,7 @@
     renderHeaderAndSchedule();
     renderDashboard();
     renderTopUpFormWallets();
+    renderSavedTargetSuggestions();
     renderKasbonPage();
     renderReportPage();
     renderDataPage();
@@ -204,10 +213,13 @@
     const todayTxs = state.transactions.filter((t) => isToday(t.createdAt));
     const todayTopups = todayTxs.filter((t) => t.type === 'topup');
     const todayExpenses = todayTxs.filter((t) => t.type === 'expense');
+    const todayTransfers = todayTxs.filter((t) => t.type === 'transfer_saldo');
 
     const omzetToday = todayTopups.reduce((sum, t) => sum + (t.nominal || 0), 0);
     const adminProfitToday = todayTopups.reduce((sum, t) => sum + (t.netProfit || 0), 0);
-    const expenseToday = todayExpenses.reduce((sum, t) => sum + (t.nominal || 0), 0);
+    const expenseToday =
+      todayExpenses.reduce((sum, t) => sum + (t.nominal || 0), 0) +
+      todayTransfers.reduce((sum, t) => sum + (t.adminFee || 0), 0);
     const netProfitToday = adminProfitToday - expenseToday;
 
     const totalActiveKasbon = state.debts
@@ -261,6 +273,7 @@
     let amountClass = '';
     let amountDisplay = '';
     let subAdminHTML = '';
+    let metaExtra = '';
 
     if (tx.type === 'topup') {
       const methodLabel =
@@ -281,6 +294,18 @@
       titleText = `Top Up ${escapeHtml(walletLabel)}${custPart}`;
       amountDisplay = formatRp(tx.totalBill);
       subAdminHTML = `<span class="tx-admin-sub">+Admin ${formatRp(tx.adminFee)}</span>`;
+      if (tx.note) metaExtra = ` • ${escapeHtml(tx.note)}`;
+    } else if (tx.type === 'transfer_saldo') {
+      const toWallet = state.wallets.find((w) => w.id === tx.toWalletId);
+      const toLabel = toWallet ? toWallet.shortName : tx.toWalletName || 'Tujuan';
+      badgeHTML = `<span class="badge-pill badge-transfer">Oper Saldo</span>`;
+      titleText = `${escapeHtml(walletLabel)} → ${escapeHtml(toLabel)}`;
+      amountClass = 'text-blue';
+      amountDisplay = formatRp(tx.nominal);
+      if (tx.adminFee > 0) {
+        subAdminHTML = `<span class="tx-admin-sub text-red">-Biaya Tf ${formatRp(tx.adminFee)}</span>`;
+      }
+      if (tx.note) metaExtra = ` • ${escapeHtml(tx.note)}`;
     } else if (tx.type === 'expense') {
       badgeHTML = `<span class="badge-pill badge-expense">Pengeluaran</span>`;
       titleText = escapeHtml(tx.note || 'Pengeluaran Operasional');
@@ -298,7 +323,6 @@
       amountDisplay = `+${formatRp(tx.nominal)}`;
     }
 
-    const notePart = tx.type === 'topup' && tx.note ? ` • ${escapeHtml(tx.note)}` : '';
     const canEdit = tx.type !== 'installment';
 
     return `
@@ -308,7 +332,7 @@
             <span class="tx-title">${titleText}</span>
             ${badgeHTML}
           </div>
-          <div class="tx-meta">${formatDateTimeShort(tx.createdAt)} • ${escapeHtml(walletLabel)}${notePart}</div>
+          <div class="tx-meta">${formatDateTimeShort(tx.createdAt)} • ${escapeHtml(walletLabel)}${metaExtra}</div>
         </div>
         <div class="tx-right">
           <span class="tx-amount ${amountClass}">${amountDisplay}</span>
@@ -357,6 +381,63 @@
     )}`;
   }
 
+  function renderSavedTargetSuggestions() {
+    const seen = new Set();
+    const suggestions = [];
+
+    for (const tx of state.transactions) {
+      if (tx.type !== 'topup' || !tx.note) continue;
+      const cleanNote = tx.note.trim();
+      if (!cleanNote) continue;
+      const key = cleanNote.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      suggestions.push({
+        label: cleanNote,
+        walletId: tx.walletId
+      });
+      if (suggestions.length >= 25) break;
+    }
+
+    const datalist = document.getElementById('saved-targets-datalist');
+    datalist.innerHTML = suggestions
+      .map((s) => `<option value="${escapeHtml(s.label)}"></option>`)
+      .join('');
+
+    const chipsContainer = document.getElementById('recent-targets-chips');
+    const quickFour = suggestions.slice(0, 4);
+    chipsContainer.innerHTML = quickFour
+      .map(
+        (s) => `
+        <button
+          type="button"
+          class="recent-target-chip"
+          data-pick-target="${escapeHtml(s.label)}"
+          data-pick-wallet="${escapeHtml(s.walletId)}"
+        >
+          ${escapeHtml(s.label)}
+        </button>
+      `
+      )
+      .join('');
+  }
+
+  function applyTargetWalletAutoDetect(textValue, explicitWalletId) {
+    if (explicitWalletId && state.wallets.some((w) => w.id === explicitWalletId && !w.isCash)) {
+      state.selectedWalletId = explicitWalletId;
+      renderTopUpFormWallets();
+      return;
+    }
+    const lower = String(textValue || '').toLowerCase();
+    const matched = state.wallets.find(
+      (w) => !w.isCash && lower.includes(w.shortName.toLowerCase())
+    );
+    if (matched) {
+      state.selectedWalletId = matched.id;
+      renderTopUpFormWallets();
+    }
+  }
+
   function updateTopUpCalculation(forceAutoAdmin = false) {
     const nominal = parseRupiahInput(document.getElementById('topup-nominal').value);
     const adminInput = document.getElementById('topup-admin');
@@ -386,6 +467,7 @@
     const modalDeducted = parseRupiahInput(document.getElementById('topup-modal').value);
     const note = document.getElementById('topup-note').value.trim();
     const customerName = document.getElementById('topup-customer-name').value.trim();
+    const customerPhone = normalizeIndonesianPhone(document.getElementById('topup-customer-phone').value);
 
     if (nominal <= 0) {
       showToast('Masukkan nominal top up terlebih dahulu.');
@@ -447,6 +529,7 @@
 
       if (existingDebt) {
         existingDebt.customerName = customerName;
+        if (customerPhone) existingDebt.phone = customerPhone;
         existingDebt.totalDebt += totalBill;
         existingDebt.remainingAmount += totalBill;
         existingDebt.totalAdmin = (existingDebt.totalAdmin || 0) + adminFee;
@@ -461,6 +544,7 @@
           id: debtId,
           customerKey,
           customerName,
+          phone: customerPhone || '',
           totalDebt: totalBill,
           remainingAmount: totalBill,
           paidAmount: 0,
@@ -496,6 +580,7 @@
     document.getElementById('topup-admin').value = '0';
     document.getElementById('topup-modal').value = '0';
     document.getElementById('topup-customer-name').value = '';
+    document.getElementById('topup-customer-phone').value = '';
     document.getElementById('topup-note').value = '';
     state.adminManuallyEdited = false;
     updateTopUpCalculation(true);
@@ -509,6 +594,87 @@
     switchView('beranda');
   }
 
+  // =========================================================================
+  // FITUR OPER / PINDAH SALDO ANTAR AKUN
+  // =========================================================================
+  function openOperSaldoModal() {
+    const fromSel = document.getElementById('oper-from-wallet');
+    const toSel = document.getElementById('oper-to-wallet');
+
+    const optionsHTML = state.wallets
+      .map((w) => `<option value="${w.id}">${escapeHtml(w.name)} (${formatRp(w.balance)})</option>`)
+      .join('');
+
+    fromSel.innerHTML = optionsHTML;
+    toSel.innerHTML = optionsHTML;
+
+    fromSel.value = 'cash';
+    toSel.value = 'dana';
+
+    document.getElementById('oper-amount').value = '';
+    document.getElementById('oper-fee').value = '0';
+    document.getElementById('oper-note').value = '';
+    updateOperSaldoPreview();
+    openModal('modal-oper-saldo');
+  }
+
+  function updateOperSaldoPreview() {
+    const amt = parseRupiahInput(document.getElementById('oper-amount').value);
+    const fee = parseRupiahInput(document.getElementById('oper-fee').value);
+    document.getElementById('oper-total-deduct').textContent = formatRp(amt + fee);
+    document.getElementById('oper-total-receive').textContent = formatRp(amt);
+  }
+
+  async function handleOperSaldoSubmit(e) {
+    e.preventDefault();
+    const fromId = document.getElementById('oper-from-wallet').value;
+    const toId = document.getElementById('oper-to-wallet').value;
+    const amount = parseRupiahInput(document.getElementById('oper-amount').value);
+    const fee = parseRupiahInput(document.getElementById('oper-fee').value);
+    const note = document.getElementById('oper-note').value.trim();
+
+    if (fromId === toId) {
+      showToast('Akun asal dan tujuan tidak boleh sama.');
+      return;
+    }
+    if (amount <= 0) {
+      showToast('Masukkan nominal saldo yang dipindahkan.');
+      return;
+    }
+
+    const fromWallet = await window.arkanDB.getById('wallets', fromId);
+    const toWallet = await window.arkanDB.getById('wallets', toId);
+    if (!fromWallet || !toWallet) return;
+
+    fromWallet.balance -= amount + fee;
+    toWallet.balance += amount;
+
+    await window.arkanDB.put('wallets', fromWallet);
+    await window.arkanDB.put('wallets', toWallet);
+
+    await window.arkanDB.put('transactions', {
+      id: generateId('tx'),
+      type: 'transfer_saldo',
+      walletId: fromWallet.id,
+      walletName: fromWallet.shortName,
+      toWalletId: toWallet.id,
+      toWalletName: toWallet.shortName,
+      nominal: amount,
+      adminFee: fee,
+      totalBill: amount + fee,
+      netProfit: -fee,
+      note: note || `Oper saldo ${fromWallet.shortName} → ${toWallet.shortName}`,
+      createdAt: new Date().toISOString()
+    });
+
+    closeModal('modal-oper-saldo');
+    await refreshAllData();
+    showToast(`Oper saldo ${formatRp(amount)} ke ${toWallet.shortName} berhasil!`);
+  }
+
+  // =========================================================================
+  // REVERT, EDIT & DELETE TRANSAKSI
+  // =========================================================================
   async function revertTransactionEffects(tx) {
     if (tx.type === 'topup') {
       const sourceWallet = await window.arkanDB.getById('wallets', tx.walletId);
@@ -546,6 +712,17 @@
             await window.arkanDB.put('debts', debt);
           }
         }
+      }
+    } else if (tx.type === 'transfer_saldo') {
+      const fromWallet = await window.arkanDB.getById('wallets', tx.walletId);
+      const toWallet = await window.arkanDB.getById('wallets', tx.toWalletId);
+      if (fromWallet) {
+        fromWallet.balance += tx.nominal + (tx.adminFee || 0);
+        await window.arkanDB.put('wallets', fromWallet);
+      }
+      if (toWallet) {
+        toWallet.balance -= tx.nominal;
+        await window.arkanDB.put('wallets', toWallet);
       }
     } else if (tx.type === 'expense') {
       const wallet = await window.arkanDB.getById('wallets', tx.walletId);
@@ -598,11 +775,17 @@
     if (!tx) return;
 
     document.getElementById('edit-tx-id').value = tx.id;
-    const walletSelect = document.getElementById('edit-tx-wallet');
-    walletSelect.innerHTML = state.wallets
+    const optionsHTML = state.wallets
       .map((w) => `<option value="${w.id}">${escapeHtml(w.name)}</option>`)
       .join('');
+
+    const walletSelect = document.getElementById('edit-tx-wallet');
+    walletSelect.innerHTML = optionsHTML;
     walletSelect.value = tx.walletId;
+
+    const toWalletSelect = document.getElementById('edit-tx-to-wallet');
+    toWalletSelect.innerHTML = optionsHTML;
+    if (tx.toWalletId) toWalletSelect.value = tx.toWalletId;
 
     document.getElementById('edit-tx-nominal').value = formatThousands(tx.nominal);
     document.getElementById('edit-tx-admin').value = formatThousands(tx.adminFee || 0);
@@ -611,7 +794,12 @@
     document.getElementById('edit-tx-note').value = tx.note || '';
 
     const isTopup = tx.type === 'topup';
-    document.getElementById('edit-tx-admin-wrap').style.display = isTopup ? 'block' : 'none';
+    const isOper = tx.type === 'transfer_saldo';
+
+    document.getElementById('edit-tx-wallet-label').textContent = isOper ? 'Dari Akun (Sumber)' : 'Dompet / Akun';
+    document.getElementById('edit-tx-to-wallet-wrap').style.display = isOper ? 'block' : 'none';
+    document.getElementById('edit-tx-admin-wrap').style.display = isTopup || isOper ? 'block' : 'none';
+    document.getElementById('edit-tx-admin-label').textContent = isOper ? 'Biaya Transfer (Rp)' : 'Biaya Admin (Rp)';
     document.getElementById('edit-tx-method-wrap').style.display = isTopup ? 'block' : 'none';
     document.getElementById('edit-tx-customer-wrap').style.display = isTopup ? 'block' : 'none';
 
@@ -625,6 +813,7 @@
     if (!oldTx) return;
 
     const newWalletId = document.getElementById('edit-tx-wallet').value;
+    const newToWalletId = document.getElementById('edit-tx-to-wallet').value;
     const newNominal = parseRupiahInput(document.getElementById('edit-tx-nominal').value);
     const newAdmin = parseRupiahInput(document.getElementById('edit-tx-admin').value);
     const newMethod = document.getElementById('edit-tx-method').value;
@@ -633,6 +822,10 @@
 
     if (newNominal <= 0) {
       showToast('Nominal tidak boleh 0.');
+      return;
+    }
+    if (oldTx.type === 'transfer_saldo' && newWalletId === newToWalletId) {
+      showToast('Akun asal dan tujuan tidak boleh sama.');
       return;
     }
     if (oldTx.type === 'topup' && newMethod === 'kasbon' && !newCustomer) {
@@ -708,6 +901,7 @@
             id: newDebtId,
             customerKey,
             customerName: newCustomer,
+            phone: '',
             totalDebt: totalBill,
             remainingAmount: totalBill,
             paidAmount: 0,
@@ -719,6 +913,22 @@
           });
           updatedTx.debtId = newDebtId;
         }
+      }
+    } else if (oldTx.type === 'transfer_saldo') {
+      const destWallet = await window.arkanDB.getById('wallets', newToWalletId);
+      updatedTx.toWalletId = newToWalletId;
+      updatedTx.toWalletName = destWallet ? destWallet.shortName : oldTx.toWalletName;
+      updatedTx.adminFee = newAdmin;
+      updatedTx.totalBill = newNominal + newAdmin;
+      updatedTx.netProfit = -newAdmin;
+
+      if (targetWallet) {
+        targetWallet.balance -= newNominal + newAdmin;
+        await window.arkanDB.put('wallets', targetWallet);
+      }
+      if (destWallet) {
+        destWallet.balance += newNominal;
+        await window.arkanDB.put('wallets', destWallet);
       }
     } else if (oldTx.type === 'expense') {
       if (targetWallet) {
@@ -738,6 +948,9 @@
     showToast('Transaksi berhasil diperbarui!');
   }
 
+  // =========================================================================
+  // KASBON, CICILAN & TAGIH WA 1-KLIK
+  // =========================================================================
   function renderKasbonPage() {
     const query = (document.getElementById('kasbon-search').value || '').trim().toLowerCase();
     const filter = document.getElementById('kasbon-filter').value;
@@ -797,12 +1010,17 @@
       })
       .join('');
 
+    const phoneBadge = debt.phone
+      ? `<span class="badge-muted">+${escapeHtml(debt.phone)}</span>`
+      : '';
+
     return `
       <div class="debt-card">
         <div class="debt-card-top">
           <div>
             <div class="debt-customer">
               <span>${escapeHtml(debt.customerName)}</span>
+              ${phoneBadge}
               ${isPaidOff ? '<span class="badge-pill badge-lunas">Lunas</span>' : ''}
             </div>
             <div class="debt-sub-meta">
@@ -824,17 +1042,73 @@
         <div class="debt-actions-row">
           ${
             !isPaidOff
-              ? `<button type="button" class="btn-cicil" data-open-cicil="${debt.id}">
-                  💰 Bayar / Cicil
-                </button>`
+              ? `<div class="debt-action-btns-left">
+                  <button type="button" class="btn-cicil" data-open-cicil="${debt.id}">
+                    💰 Bayar / Cicil
+                  </button>
+                  <button type="button" class="btn-wa-tagih" data-tagih-wa="${debt.id}">
+                    📲 Tagih WA
+                  </button>
+                </div>`
               : `<span class="badge-muted">Selesai &amp; Lunas</span>`
           }
-          <button type="button" class="icon-btn-tiny danger" data-delete-debt="${debt.id}" title="Hapus Catatan Kasbon">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-          </button>
+          <div class="tx-actions">
+            <button type="button" class="icon-btn-tiny" data-edit-debt-phone="${debt.id}" title="Atur No. WA Pelanggan">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            </button>
+            <button type="button" class="icon-btn-tiny danger" data-delete-debt="${debt.id}" title="Hapus Catatan Kasbon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+            </button>
+          </div>
         </div>
       </div>
     `;
+  }
+
+  function triggerWhatsAppReminder(debtId) {
+    const debt = state.debts.find((d) => d.id === debtId);
+    if (!debt) return;
+
+    const sched = getNextRestockSchedule();
+    const message = [
+      `Halo Kak *${debt.customerName}*, izin mengingatkan rincian catatan top up di *Arkan Konter*:`,
+      `• Total Transaksi: ${formatRp(debt.totalDebt)}`,
+      `• Sudah Dibayar: ${formatRp(debt.paidAmount || 0)}`,
+      `• *Sisa Tagihan: ${formatRp(debt.remainingAmount)}*`,
+      ``,
+      `Mohon konfirmasinya ya Kak sebelum jadwal isi ulang saldo hari *${sched.nextDayName}*. Terima kasih banyak! 🙏`
+    ].join('\n');
+
+    const encoded = encodeURIComponent(message);
+    const cleanPhone = normalizeIndonesianPhone(debt.phone || '');
+    const waUrl = cleanPhone
+      ? `https://wa.me/${cleanPhone}?text=${encoded}`
+      : `https://api.whatsapp.com/send?text=${encoded}`;
+
+    window.open(waUrl, '_blank');
+  }
+
+  function openDebtPhoneModal(debtId) {
+    const debt = state.debts.find((d) => d.id === debtId);
+    if (!debt) return;
+    document.getElementById('phone-debt-id').value = debt.id;
+    document.getElementById('phone-debt-customer').textContent = debt.customerName;
+    document.getElementById('phone-debt-input').value = debt.phone || '';
+    openModal('modal-debt-phone');
+  }
+
+  async function handleDebtPhoneSubmit(e) {
+    e.preventDefault();
+    const debtId = document.getElementById('phone-debt-id').value;
+    const phone = normalizeIndonesianPhone(document.getElementById('phone-debt-input').value);
+    const debt = await window.arkanDB.getById('debts', debtId);
+    if (debt) {
+      debt.phone = phone;
+      await window.arkanDB.put('debts', debt);
+    }
+    closeModal('modal-debt-phone');
+    await refreshAllData();
+    showToast(phone ? 'Nomor WhatsApp pelanggan disimpan.' : 'Nomor WhatsApp dikosongkan.');
   }
 
   function openCicilModal(debtId) {
@@ -945,16 +1219,23 @@
     );
   }
 
+  // =========================================================================
+  // HALAMAN LAPORAN & PENCARIAN RIWAYAT TRANSAKSI
+  // =========================================================================
   function renderReportPage() {
     const period = document.getElementById('report-period-filter').value;
-    const filteredTxs = state.transactions.filter((t) => {
+    const searchQuery = (document.getElementById('report-tx-search').value || '').trim().toLowerCase();
+    const typeFilter = document.getElementById('report-tx-type-filter').value;
+
+    const periodTxs = state.transactions.filter((t) => {
       if (period === 'today') return isToday(t.createdAt);
       if (period === 'month') return isThisMonth(t.createdAt);
       return true;
     });
 
-    const topups = filteredTxs.filter((t) => t.type === 'topup');
-    const expenses = filteredTxs.filter((t) => t.type === 'expense');
+    const topups = periodTxs.filter((t) => t.type === 'topup');
+    const expenses = periodTxs.filter((t) => t.type === 'expense');
+    const transfers = periodTxs.filter((t) => t.type === 'transfer_saldo');
 
     const totalOmzet = topups.reduce((sum, t) => sum + (t.nominal || 0), 0);
 
@@ -968,7 +1249,9 @@
       return sum;
     }, 0);
 
-    const totalExpense = expenses.reduce((sum, t) => sum + (t.nominal || 0), 0);
+    const totalExpense =
+      expenses.reduce((sum, t) => sum + (t.nominal || 0), 0) +
+      transfers.reduce((sum, t) => sum + (t.adminFee || 0), 0);
     const netProfit = realizedProfit - totalExpense;
 
     const totalWalletBalances = state.wallets.reduce((sum, w) => sum + (w.balance || 0), 0);
@@ -994,12 +1277,30 @@
       cfWalletSelect.value = 'cash';
     }
 
-    document.getElementById('all-tx-count').textContent = `${filteredTxs.length} transaksi`;
+    const searchedTxs = periodTxs.filter((t) => {
+      if (typeFilter !== 'all' && t.type !== typeFilter) return false;
+      if (!searchQuery) return true;
+      const haystack = [
+        t.note,
+        t.customerName,
+        t.walletName,
+        t.toWalletName,
+        t.paymentMethod,
+        String(t.nominal || ''),
+        String(t.totalBill || ''),
+        formatThousands(t.nominal || 0)
+      ]
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(searchQuery);
+    });
+
+    document.getElementById('all-tx-count').textContent = `${searchedTxs.length} transaksi`;
     const allListEl = document.getElementById('all-transactions-list');
-    if (filteredTxs.length === 0) {
-      allListEl.innerHTML = '<div class="empty-state">Tidak ada transaksi pada periode ini.</div>';
+    if (searchedTxs.length === 0) {
+      allListEl.innerHTML = '<div class="empty-state">Tidak ada transaksi yang cocok dengan pencarian.</div>';
     } else {
-      allListEl.innerHTML = filteredTxs.map((t) => renderTransactionItemHTML(t)).join('');
+      allListEl.innerHTML = searchedTxs.map((t) => renderTransactionItemHTML(t)).join('');
     }
   }
 
@@ -1212,11 +1513,12 @@
   }
 
   async function exportCSVReport() {
-    const headers = ['Waktu', 'Jenis', 'Akun', 'Nominal', 'Biaya Admin', 'Total Tagihan', 'Metode', 'Pelanggan', 'Catatan'];
+    const headers = ['Waktu', 'Jenis', 'Akun', 'Tujuan', 'Nominal', 'Biaya Admin/Tf', 'Total', 'Metode', 'Pelanggan', 'Catatan'];
     const rows = state.transactions.map((t) => [
       new Date(t.createdAt).toLocaleString('id-ID'),
       t.type,
       t.walletName || '',
+      t.toWalletName || '-',
       t.nominal || 0,
       t.adminFee || 0,
       t.totalBill || t.nominal || 0,
@@ -1325,12 +1627,29 @@
         return;
       }
 
+      const pickTargetBtn = e.target.closest('[data-pick-target]');
+      if (pickTargetBtn) {
+        const val = pickTargetBtn.dataset.pickTarget;
+        const wId = pickTargetBtn.dataset.pickWallet;
+        document.getElementById('topup-note').value = val;
+        applyTargetWalletAutoDetect(val, wId);
+        return;
+      }
+
       const presetBtn = e.target.closest('[data-nominal]');
       if (presetBtn) {
         const val = parseInt(presetBtn.dataset.nominal, 10);
         document.getElementById('topup-nominal').value = formatThousands(val);
         state.adminManuallyEdited = false;
         updateTopUpCalculation(true);
+        return;
+      }
+
+      const operFeeBtn = e.target.closest('[data-oper-fee]');
+      if (operFeeBtn) {
+        const feeVal = parseInt(operFeeBtn.dataset.operFee, 10);
+        document.getElementById('oper-fee').value = feeVal > 0 ? formatThousands(feeVal) : '0';
+        updateOperSaldoPreview();
         return;
       }
 
@@ -1364,6 +1683,18 @@
         return;
       }
 
+      const waBtn = e.target.closest('[data-tagih-wa]');
+      if (waBtn) {
+        triggerWhatsAppReminder(waBtn.dataset.tagihWa);
+        return;
+      }
+
+      const editDebtPhoneBtn = e.target.closest('[data-edit-debt-phone]');
+      if (editDebtPhoneBtn) {
+        openDebtPhoneModal(editDebtPhoneBtn.dataset.editDebtPhone);
+        return;
+      }
+
       const delDebtBtn = e.target.closest('[data-delete-debt]');
       if (delDebtBtn) {
         promptDeleteDebt(delDebtBtn.dataset.deleteDebt);
@@ -1374,6 +1705,7 @@
     document.getElementById('btn-open-deposit').addEventListener('click', () => {
       openEditWalletModal('dana', 'deposit');
     });
+    document.getElementById('btn-open-oper-saldo').addEventListener('click', openOperSaldoModal);
     document.getElementById('btn-edit-primary-wallet').addEventListener('click', () => {
       openEditWalletModal('dana', 'edit');
     });
@@ -1397,6 +1729,17 @@
       }
     );
     bindNominalInputWithTripleZero(
+      document.getElementById('oper-amount'),
+      document.getElementById('btn-oper-000'),
+      updateOperSaldoPreview
+    );
+    document.getElementById('oper-fee').addEventListener('input', (e) => {
+      const v = parseRupiahInput(e.target.value);
+      e.target.value = v > 0 ? formatThousands(v) : '0';
+      updateOperSaldoPreview();
+    });
+
+    bindNominalInputWithTripleZero(
       document.getElementById('cf-nominal'),
       document.getElementById('btn-cf-000')
     );
@@ -1412,6 +1755,18 @@
       document.getElementById('cicil-amount'),
       document.getElementById('btn-cicil-000')
     );
+
+    document.getElementById('topup-note').addEventListener('input', (e) => {
+      applyTargetWalletAutoDetect(e.target.value, null);
+    });
+
+    document.getElementById('topup-customer-name').addEventListener('input', (e) => {
+      const key = e.target.value.trim().toLowerCase();
+      const matchedDebt = state.debts.find((d) => d.customerKey === key && d.phone);
+      if (matchedDebt && !document.getElementById('topup-customer-phone').value) {
+        document.getElementById('topup-customer-phone').value = matchedDebt.phone;
+      }
+    });
 
     document.getElementById('btn-topup-clear').addEventListener('click', () => {
       document.getElementById('topup-nominal').value = '';
@@ -1454,11 +1809,13 @@
     });
 
     document.getElementById('form-topup').addEventListener('submit', handleTopUpSubmit);
+    document.getElementById('form-oper-saldo').addEventListener('submit', handleOperSaldoSubmit);
     document.getElementById('form-cashflow').addEventListener('submit', handleCashflowSubmit);
     document.getElementById('form-add-wallet').addEventListener('submit', handleAddWalletSubmit);
     document.getElementById('form-edit-wallet').addEventListener('submit', handleEditWalletSubmit);
     document.getElementById('form-edit-tx').addEventListener('submit', handleEditTransactionSubmit);
     document.getElementById('form-cicil').addEventListener('submit', handleCicilSubmit);
+    document.getElementById('form-debt-phone').addEventListener('submit', handleDebtPhoneSubmit);
 
     document.getElementById('btn-confirm-yes').addEventListener('click', async () => {
       closeModal('modal-confirm');
@@ -1471,6 +1828,8 @@
     document.getElementById('kasbon-search').addEventListener('input', renderKasbonPage);
     document.getElementById('kasbon-filter').addEventListener('change', renderKasbonPage);
     document.getElementById('report-period-filter').addEventListener('change', renderReportPage);
+    document.getElementById('report-tx-search').addEventListener('input', renderReportPage);
+    document.getElementById('report-tx-type-filter').addEventListener('change', renderReportPage);
 
     document.getElementById('btn-export-json').addEventListener('click', exportJSONBackup);
     document.getElementById('btn-export-csv').addEventListener('click', exportCSVReport);

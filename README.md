@@ -1,12 +1,9 @@
-# Arkan Konter v2 — Aplikasi Kasir & Pembukuan Top Up E-Wallet (100% Offline)
+# Arkan Konter v2.2 — Aplikasi Kasir & Pembukuan Top Up E-Wallet (100% Offline)
 
 ## Fitur Utama
 - **100% Full Offline**: Tanpa CDN eksternal, menggunakan Vanilla CSS, SVG inline, IndexedDB, dan Service Worker.
 - **Tombol Pintas `000`**: Ketik angka singkat (misal `10`) lalu tekan `000` untuk langsung mengubah nominal menjadi `10.000`.
-- **Skema Biaya Admin Berjenjang Otomatis**:
-  - `< Rp 20.000` → `Rp 3.000`
-  - `Rp 20.000 – Rp 120.000` → `Rp 5.000`
-  - `Rp 120.001 – Rp 299.999` → `Rp 10.000`
-  - `>= Rp 300.000` → `Rp 15.000`
-- **Logika Kasbon Terakumulasi (1 Orang = 1 Utang)**: Pelanggan dengan nama sama otomatis digabungkan ke dalam satu catatan utang aktif.
-- **Fitur Bayar / Cicil**: Mendukung pembayaran cicilan bertahap lengkap dengan riwayat cicilan dan status Lunas otomatis.
+- **Oper / Pindah Saldo Antar-Akun**: Memindahkan dana dari Tunai Laci ke Bank/DANA saat kulakan Selasa & Jumat (termasuk potongan biaya transfer jika ada) tanpa mengacaukan hitungan omzet.
+- **Saran Otomatis (Autocomplete) Nomor Tujuan**: Menyimpan nomor tujuan pelanggan sebelumnya dan otomatis memilih dompet terkait saat dipilih.
+- **Logika Kasbon Terakumulasi + Tagih WA 1-Klik**: Pelanggan dengan nama sama digabung otomatis, mendukung pembayaran cicilan bertahap, serta tombol **Tagih WA** yang otomatis menyusun rincian sisa tagihan.
+- **Pencarian Riwayat Transaksi**: Melacak transaksi di halaman Laporan berdasarkan nomor HP tujuan, nama pelanggan, akun, atau nominal.
